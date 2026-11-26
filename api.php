@@ -55,6 +55,11 @@ function get_bearer_token(): string {
     return str_starts_with($auth, 'Bearer ') ? substr($auth, 7) : '';
 }
 
+function log_event(PDO $pdo, string $uname, string $act, string $details, string $ip, int $now): void {
+    $pdo->prepare("INSERT INTO activity_logs (username, action, details, ip, ts) VALUES (?, ?, ?, ?, ?)")
+        ->execute([$uname, $act, $details, $ip, $now]);
+}
+
 function get_lock_wait(PDO $pdo, string $uname, int $now): int {
     $st = $pdo->prepare("SELECT until_ts FROM login_locks WHERE username = ?");
     $st->execute([$uname]);
@@ -249,6 +254,9 @@ if ($action === 'verify_signup') {
 
     $pdo->prepare("UPDATE users SET is_verified = 1 WHERE email = ?")->execute([$uname]);
     $pdo->prepare("DELETE FROM signup_otps WHERE username = ?")->execute([$uname]);
+    $pdo->prepare("INSERT INTO password_history (username, password_hash, created_at) SELECT email, password_hash, ? FROM users WHERE email = ?")
+        ->execute([$now, $uname]);
+    log_event($pdo, $uname, 'SIGNUP_VERIFIED', 'Account verified via Gmail OTP', $ip, $now);
 
     $t = create_session($pdo, $uname, $now);
     send_json(200, ['token' => $t]);
@@ -269,6 +277,7 @@ if ($action === 'login') {
     if (!$u || !password_verify($pass, $u['password_hash'] ?? '')) {
         $x = record_user_fail($pdo, $uname, $now);
         record_ip_fail($pdo, $ip, $now);
+        log_event($pdo, $uname ?: 'unknown', 'LOGIN_FAILED', 'Invalid credentials attempt', $ip, $now);
         $w2 = max(get_lock_wait($pdo, $uname, $now), get_ip_wait($pdo, $ip, $now));
         $forgot = ((int) $x['t']) >= 2;
 
@@ -302,6 +311,7 @@ if ($action === 'login') {
     }
 
     $pdo->prepare("DELETE FROM login_locks WHERE username = ?")->execute([$uname]);
+    log_event($pdo, $uname, 'LOGIN_SUCCESS', 'Authenticated session created', $ip, $now);
     $t = create_session($pdo, $uname, $now);
     send_json(200, ['token' => $t]);
 }
@@ -406,12 +416,23 @@ if ($action === 'reset') {
         send_json(400, ['error' => 'One or more answers are wrong.']);
     }
 
+    $phSt = $pdo->prepare("SELECT password_hash FROM password_history WHERE username = ? ORDER BY created_at DESC LIMIT 3");
+    $phSt->execute([$uname]);
+    foreach ($phSt->fetchAll() as $oldPw) {
+        if (password_verify($pw, $oldPw['password_hash'])) {
+            send_json(400, ['error' => 'You cannot reuse any of your last 3 passwords.']);
+        }
+    }
+
     $newHash = password_hash($pw, PASSWORD_DEFAULT);
     $pdo->prepare("UPDATE users SET password_hash = ? WHERE email = ?")
         ->execute([$newHash, $uname]);
+    $pdo->prepare("INSERT INTO password_history (username, password_hash, created_at) VALUES (?, ?, ?)")
+        ->execute([$uname, $newHash, $now]);
     $pdo->prepare("DELETE FROM otp_resets WHERE username = ?")->execute([$uname]);
     $pdo->prepare("DELETE FROM login_locks WHERE username = ?")->execute([$uname]);
     $pdo->prepare("DELETE FROM sessions WHERE email = ?")->execute([$uname]);
+    log_event($pdo, $uname, 'PASSWORD_RESET', 'Password updated via OTP and security questions', $ip, $now);
 
     send_json(200, ['ok' => 1]);
 }
@@ -447,6 +468,7 @@ if ($action === 'ping') {
 
 if ($action === 'logout') {
     $pdo->prepare("DELETE FROM sessions WHERE token = ?")->execute([$tok]);
+    log_event($pdo, $me['email'], 'LOGOUT', 'User logged out', $ip, $now);
     send_json(200, []);
 }
 
@@ -522,12 +544,23 @@ if ($action === 'data') {
         return $row;
     }, $mSt->fetchAll());
 
+    $adminData = null;
+    if ($me['role'] === 'admin') {
+        $adminData = [
+            'allUsers' => $pdo->query("SELECT id, name, email, gmail, role, is_verified, phone, created_at FROM users ORDER BY id ASC")->fetchAll(),
+            'locks' => $pdo->query("SELECT * FROM login_locks WHERE until_ts > 0 OR t > 0")->fetchAll(),
+            'ipBlocks' => $pdo->query("SELECT * FROM ip_blocks")->fetchAll(),
+            'logs' => $pdo->query("SELECT * FROM activity_logs ORDER BY ts DESC LIMIT 50")->fetchAll()
+        ];
+    }
+
     send_json(200, [
         'me' => $me,
         'users' => $users,
         'jobs' => $jobs,
         'apps' => $apps,
-        'msgs' => $msgs
+        'msgs' => $msgs,
+        'admin' => $adminData
     ]);
 }
 
@@ -707,6 +740,22 @@ if ($action === 'op') {
             $ap = (string) ($b['ap'] ?? '');
             $pdo->prepare("UPDATE msgs SET is_read = 1 WHERE job_id = ? AND ap = ? AND recipient = ?")
                 ->execute([$jId, $ap, $me['email']]);
+            send_json(200, ['ok' => 1]);
+        }
+
+        case 'unlock_user': {
+            if ($me['role'] !== 'admin') send_json(403, ['error' => 'Admin only.']);
+            $target = (string) ($b['target'] ?? '');
+            $pdo->prepare("DELETE FROM login_locks WHERE username = ?")->execute([$target]);
+            log_event($pdo, $me['email'], 'ADMIN_UNLOCK', "Unlocked user {$target}", $ip, $now);
+            send_json(200, ['ok' => 1]);
+        }
+
+        case 'unblock_ip': {
+            if ($me['role'] !== 'admin') send_json(403, ['error' => 'Admin only.']);
+            $targetIp = (string) ($b['target'] ?? '');
+            $pdo->prepare("DELETE FROM ip_blocks WHERE ip = ?")->execute([$targetIp]);
+            log_event($pdo, $me['email'], 'ADMIN_UNBLOCK_IP', "Unblocked IP {$targetIp}", $ip, $now);
             send_json(200, ['ok' => 1]);
         }
     }

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 26, 2026 at 09:43 PM
+-- Generation Time: Nov 26, 2026 at 10:25 PM
 -- Server version: 10.11.16-MariaDB
 -- PHP Version: 8.4.27
 
@@ -20,6 +20,33 @@ SET time_zone = "+00:00";
 --
 -- Database: `quickshift_db`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `activity_logs`
+--
+
+CREATE TABLE `activity_logs` (
+  `id` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `action` varchar(50) NOT NULL,
+  `details` varchar(255) NOT NULL DEFAULT '',
+  `ip` varchar(45) NOT NULL DEFAULT '',
+  `ts` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `activity_logs`
+--
+
+INSERT INTO `activity_logs` (`id`, `username`, `action`, `details`, `ip`, `ts`) VALUES
+(1, 'adminqs', 'ACCOUNT_CREATED', 'Admin test account initialized', '127.0.0.1', 1795727428000),
+(2, 'veronerz', 'LOGIN_SUCCESS', 'Owner logged in', '127.0.0.1', 1795727428000),
+(3, 'sabeth', 'JOB_APPLIED', 'Applied to rider shift', '127.0.0.1', 1795727428000),
+(4, 'admings', 'LOGIN_FAILED', 'Invalid credentials attempt', '::1', 1795728060107),
+(5, 'admings', 'LOGIN_FAILED', 'Invalid credentials attempt', '::1', 1795728067522),
+(6, 'adminqs', 'LOGIN_SUCCESS', 'Authenticated session created', '::1', 1795728113526);
 
 -- --------------------------------------------------------
 
@@ -63,7 +90,8 @@ CREATE TABLE `ip_attempts` (
 --
 
 INSERT INTO `ip_attempts` (`id`, `ip`, `ts`) VALUES
-(1, '::1', 1795682461849);
+(2, '::1', 1795728060107),
+(3, '::1', 1795728067522);
 
 -- --------------------------------------------------------
 
@@ -121,6 +149,13 @@ CREATE TABLE `login_locks` (
   `until_ts` bigint(20) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `login_locks`
+--
+
+INSERT INTO `login_locks` (`username`, `n`, `s`, `t`, `until_ts`) VALUES
+('admings', 2, 0, 2, 0);
+
 -- --------------------------------------------------------
 
 --
@@ -165,6 +200,30 @@ CREATE TABLE `otp_resets` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `password_history`
+--
+
+CREATE TABLE `password_history` (
+  `id` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `created_at` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `password_history`
+--
+
+INSERT INTO `password_history` (`id`, `username`, `password_hash`, `created_at`) VALUES
+(1, 'veronerz', '$2y$12$ziMso/7p02Ej2N/0o8sjqOf1AE6jTSSJIwz5sgzwYeTAekr3Eqm.m', 1795727428000),
+(2, 'sabeth', '$2y$12$QNgyETZCeloZsQs18xMiYOdQHl9NT7ObV2vyF2dX1dYcFnLxmff8S', 1795727428000),
+(3, 'adminqs', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1795727428000),
+(4, 'marias', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1795727428000),
+(5, 'juandc', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1795727428000);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `sessions`
 --
 
@@ -179,7 +238,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`token`, `email`, `last_active`) VALUES
-('b47e731904798a197fbb4fa3a1cf7a18495f0bdc2e048b55', 'veronerz', 1795724299134);
+('5e284f4e04322ccd68f4869b06902a0f982a54e26ff65ed2', 'adminqs', 1795728235146);
 
 -- --------------------------------------------------------
 
@@ -206,7 +265,7 @@ CREATE TABLE `users` (
   `name` varchar(100) NOT NULL,
   `email` varchar(50) NOT NULL,
   `gmail` varchar(120) DEFAULT NULL,
-  `role` enum('owner','applicant') NOT NULL DEFAULT 'applicant',
+  `role` enum('admin','owner','applicant') NOT NULL DEFAULT 'applicant',
   `is_verified` tinyint(1) NOT NULL DEFAULT 1,
   `phone` varchar(25) NOT NULL DEFAULT '',
   `password_hash` varchar(255) NOT NULL DEFAULT '',
@@ -220,11 +279,21 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `name`, `email`, `gmail`, `role`, `is_verified`, `phone`, `password_hash`, `qa_json`, `created_at`) VALUES
 (1, 'veron erz', 'veronerz', 'elizabeth.coriba@csucc.edu.ph', 'owner', 1, '09128503146', '$2y$12$ziMso/7p02Ej2N/0o8sjqOf1AE6jTSSJIwz5sgzwYeTAekr3Eqm.m', '[{\"i\":0,\"h\":\"$2y$12$EWCRnKx\\/aCfCcFHDE7Yxtuw8gjbSQLBQ9O0HE3EAK92f3iwQB7YuO\"},{\"i\":1,\"h\":\"$2y$12$.IuoxOrqIY7E7UNruiJi8.zQKAkE6mGfLHufHVO.pffu1wnrtctlO\"},{\"i\":2,\"h\":\"$2y$12$NaeZQoEWBj92gTDCQik9v.qnDI9GPvIGH7Ydj2CovCcuBujTjFNCO\"}]', '2026-11-26 08:42:35'),
-(2, 'sabeth coriba', 'sabeth', 'dreyvelee@gmail.com', 'applicant', 1, '09855210979', '$2y$12$QNgyETZCeloZsQs18xMiYOdQHl9NT7ObV2vyF2dX1dYcFnLxmff8S', '[{\"i\":0,\"h\":\"$2y$12$Td5m3uB\\/z5TD2HozBZSGZeBrThu8oUvAp91DFsST3CitawP9JsqwK\"},{\"i\":1,\"h\":\"$2y$12$BPsT3TM\\/zA3sS8gt58f4aOLU3063\\/I297RZFCeUuozRMP9ov7ds9q\"},{\"i\":2,\"h\":\"$2y$12$UD5s7si4.5Jk3IxsTEjjT.gvbHoGib0DpknTyLGwC49RcHph\\/LdLa\"}]', '2026-11-26 08:43:58');
+(2, 'sabeth coriba', 'sabeth', 'dreyvelee@gmail.com', 'applicant', 1, '09855210979', '$2y$12$QNgyETZCeloZsQs18xMiYOdQHl9NT7ObV2vyF2dX1dYcFnLxmff8S', '[{\"i\":0,\"h\":\"$2y$12$Td5m3uB\\/z5TD2HozBZSGZeBrThu8oUvAp91DFsST3CitawP9JsqwK\"},{\"i\":1,\"h\":\"$2y$12$BPsT3TM\\/zA3sS8gt58f4aOLU3063\\/I297RZFCeUuozRMP9ov7ds9q\"},{\"i\":2,\"h\":\"$2y$12$UD5s7si4.5Jk3IxsTEjjT.gvbHoGib0DpknTyLGwC49RcHph\\/LdLa\"}]', '2026-11-26 08:43:58'),
+(3, 'System Admin', 'adminqs', 'elizabeth.coriba@csucc.edu.ph', 'admin', 1, '09170000001', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '[{\"i\":0,\"h\":\"$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi\"},{\"i\":1,\"h\":\"$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi\"},{\"i\":2,\"h\":\"$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi\"}]', '2026-11-26 21:10:28'),
+(4, 'Maria Santos', 'marias', 'dreyvelee@gmail.com', 'owner', 1, '09170000002', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '[{\"i\":0,\"h\":\"$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi\"},{\"i\":1,\"h\":\"$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi\"},{\"i\":2,\"h\":\"$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi\"}]', '2026-11-26 21:10:28'),
+(5, 'Juan Dela Cruz', 'juandc', 'elizabeth.coriba@csucc.edu.ph', 'applicant', 1, '09170000003', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '[{\"i\":0,\"h\":\"$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi\"},{\"i\":1,\"h\":\"$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi\"},{\"i\":2,\"h\":\"$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi\"}]', '2026-11-26 21:10:28');
 
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `activity_logs`
+--
+ALTER TABLE `activity_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_log_ts` (`ts`);
 
 --
 -- Indexes for table `apps`
@@ -274,6 +343,13 @@ ALTER TABLE `otp_resets`
   ADD PRIMARY KEY (`username`);
 
 --
+-- Indexes for table `password_history`
+--
+ALTER TABLE `password_history`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_ph_user` (`username`);
+
+--
 -- Indexes for table `sessions`
 --
 ALTER TABLE `sessions`
@@ -298,16 +374,28 @@ ALTER TABLE `users`
 --
 
 --
+-- AUTO_INCREMENT for table `activity_logs`
+--
+ALTER TABLE `activity_logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
 -- AUTO_INCREMENT for table `ip_attempts`
 --
 ALTER TABLE `ip_attempts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `password_history`
+--
+ALTER TABLE `password_history`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

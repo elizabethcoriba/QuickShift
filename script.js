@@ -1,17 +1,17 @@
 'use strict';
 const $=s=>document.querySelector(s),E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let tok=localStorage.getItem('qs2_tok')||'',users=[],jobs=[],apps=[],msgs=[],me=null,view='home',th=null,up=false,fl='',mine=true,sig='';const lockUntil={};
+let tok=localStorage.getItem('qs2_tok')||'',users=[],jobs=[],apps=[],msgs=[],me=null,adminData=null,view='home',th=null,up=false,fl='',mine=true,sig='';const lockUntil={};
 const DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],CATS=['Retail','Food','Service','Delivery','Events','Office'],ST=['Pending','Reviewed','Hired','Rejected'];
 const LOCS=['Davao','Carmen','Cabadbaran','La union','Calibunan','Butuan','Magallanes','Kauswagan','talacogon','Luna','Cagayan'];
 const T=t=>{const[h,m]=t.split(':');return((h%12)||12)+(m==='00'?'':':'+m)+(h<12?'am':'pm')};
-const user=e=>users.find(u=>u.email===e),jobOf=id=>jobs.find(j=>j.id===id),own=()=>me.role==='owner';
+const user=e=>users.find(u=>u.email===e),jobOf=id=>jobs.find(j=>j.id===id),own=()=>me.role==='owner',adm=()=>me.role==='admin';
 const myApps=()=>own()?apps.filter(a=>jobOf(a.jobId)?.owner===me.email):apps.filter(a=>a.applicant===me.email);
 const unread=()=>msgs.filter(m=>m.to===me.email&&!m.read).length;
 let tt;const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2600)};
 
 const API='api.php?action=';
 const H=()=>({'Content-Type':'application/json',Authorization:'Bearer '+tok});
-async function pull(force){if(!tok)return;try{const r=await fetch(API+'data',{headers:{...H(),'X-Poll':'1'}});if(r.status===401){if(me){const e=await r.json().catch(()=>({}));A.logout(0,e.error)}return}const d=await r.json(),g=JSON.stringify(d);if(!force&&g===sig)return;sig=g;({me,users,jobs,apps,msgs}=d);if(!$('#app').hidden)refresh()}catch{}}
+async function pull(force){if(!tok)return;try{const r=await fetch(API+'data',{headers:{...H(),'X-Poll':'1'}});if(r.status===401){if(me){const e=await r.json().catch(()=>({}));A.logout(0,e.error)}return}const d=await r.json(),g=JSON.stringify(d);if(!force&&g===sig)return;sig=g;({me,users,jobs,apps,msgs,admin:adminData}=d);if(!$('#app').hidden)refresh()}catch{}}
 async function op(name,data){try{const r=await fetch(API+'op',{method:'POST',headers:H(),body:JSON.stringify({op:name,...data})}),j=await r.json().catch(()=>({}));if(!r.ok){toast(j.error||'Something went wrong.');if(r.status===401)A.logout(0,j.error);return null}await pull();return j}catch{toast('Can’t reach the server.');return null}}
 function refresh(){if(view==='msgs'){markRead();drawNav();renderTL();renderML()}else render()}
 function markRead(){if(!th)return;const u=msgs.filter(m=>m.j===th.j&&m.ap===th.ap&&m.to===me.email&&!m.read);if(!u.length)return;u.forEach(m=>m.read=true);fetch(API+'op',{method:'POST',headers:H(),body:JSON.stringify({op:'read',j:th.j,ap:th.ap})})}
@@ -33,21 +33,38 @@ $('#authForm').onsubmit=async e=>{e.preventDefault();err('');const email=$('#ema
  if(!r.ok){if(j.wait){lockUntil[email]=Date.now()+j.wait*1000;return lockUI()}return err(j.error+(j.left!=null?` ${j.left} ${j.left===1?'try':'tries'} left before lockout.`:''))}
  tok=j.token;localStorage.setItem('qs2_tok',tok);await pull(true);if(me)enter()};
 
-function enter(){$('#fgt').hidden=true;$('#auth').hidden=true;$('#app').hidden=false;$('#authForm').reset();go('home')}
+function enter(){$('#fgt').hidden=true;$('#auth').hidden=true;$('#app').hidden=false;$('#authForm').reset();go(adm()?'admin':'home')}
 function go(v){view=v;document.querySelectorAll('.view').forEach(s=>s.hidden=s.id!=='v-'+v);$('#q').hidden=v!=='jobs';render()}
-function drawNav(){const n=unread(),nav=[['home','Home'],['jobs','Jobs'],...(own()?[['post','Post a job']]:[]),['people',own()?'Applicants':'My applications'],['msgs','Messages']];
- $('#nav').innerHTML=nav.map(([id,l])=>`<button class="${id===view?'on':''}" data-go="${id}"><span class="ic">${{home:'⌂',jobs:'▤',post:'＋',people:'♙',msgs:'✉'}[id]}</span><span class="lb">${l}</span>${id==='msgs'&&n?`<i>${n}</i>`:''}</button>`).join('');
- $('#me').innerHTML=`<span class="av">${E(me.name[0].toUpperCase())}</span><b>${E(me.name)}</b><small>${own()?'Owner':'Part-timer'}</small>`;$('#vt').textContent=nav.find(n=>n[0]===view)[1]}
+function drawNav(){const n=unread(),nav=adm()?[['admin','Admin Security'],['jobs','All Jobs'],['msgs','Messages']]:[['home','Home'],['jobs','Jobs'],...(own()?[['post','Post a job']]:[]),['people',own()?'Applicants':'My applications'],['msgs','Messages']];
+ $('#nav').innerHTML=nav.map(([id,l])=>`<button class="${id===view?'on':''}" data-go="${id}"><span class="ic">${{admin:'🛡',home:'⌂',jobs:'▤',post:'＋',people:'♙',msgs:'✉'}[id]}</span><span class="lb">${l}</span>${id==='msgs'&&n?`<i>${n}</i>`:''}</button>`).join('');
+ $('#me').innerHTML=`<span class="av">${E(me.name[0].toUpperCase())}</span><b>${E(me.name)}</b><small>${adm()?'Administrator':own()?'Owner':'Part-timer'}</small>`;$('#vt').textContent=nav.find(n=>n[0]===view)[1]}
 function render(){if(me){drawNav();R[view]()}}
 
 const wk=j=>`<div class="wk">${'MTWTFSS'.split('').map((c,i)=>`<i class="${j.days.includes(i)?'on':''}" title="${DN[i]}">${c}</i>`).join('')}<span>${T(j.t1)}–${T(j.t2)}</span></div>`;
 function ticket(j){const n=apps.filter(a=>a.jobId===j.id),left=j.slots-(j.hired||0),my=n.find(a=>a.applicant===me.email);let act='';
  if(j.owner===me.email)act=`<button class="ghost" data-act="toggle" data-id="${j.id}">${j.open?'Close hiring':'Reopen'}</button><button class="ghost" data-go="people">Applicants (${n.length})</button><button class="ghost" data-act="del" data-id="${j.id}">Delete</button>`;
- else if(!own())act=(my?`<span class="tag">Applied · ${my.status}</span>`:j.open&&left>0?`<button class="btn" data-act="apply" data-id="${j.id}">Apply</button>`:'<span class="tag">Filled</span>')+`<button class="ghost" data-act="open" data-j="${j.id}" data-ap="${E(me.email)}">Message owner</button>`;
+ else if(!own()&&!adm())act=(my?`<span class="tag">Applied · ${my.status}</span>`:j.open&&left>0?`<button class="btn" data-act="apply" data-id="${j.id}">Apply</button>`:'<span class="tag">Filled</span>')+`<button class="ghost" data-act="open" data-j="${j.id}" data-ap="${E(me.email)}">Message owner</button>`;
  return`<article class="tk ${j.open&&left>0?'':'off'}"><div class="bd"><span class="cat">${E(j.cat)}</span><h3>${E(j.title)}</h3><p class="sub">${E(j.ownerName)} · ${E(j.loc)}</p>${wk(j)}<p class="ds">${E(j.desc||'No description.')}</p><div class="acts">${act}</div></div><div class="stub"><b>₱${(+j.pay).toLocaleString()}</b><span>per ${E(j.unit)}</span><em>${j.open?Math.max(left,0)+' of '+j.slots+' open':'Closed'}</em></div></article>`}
 function row(a){const o=own();return`<div class="row"><div><b>${E(o?a.name:a.title)}</b><small>${o?'for '+E(a.title)+' · '+E(a.phone||a.applicant):E(jobOf(a.jobId)?.ownerName||'')}</small>${a.note?`<q>${E(a.note)}</q>`:''}</div><div class="rt"><span class="pill st-${a.status}">${a.status}</span>${o?['Reviewed','Hired','Rejected'].map(s=>`<button class="ghost seg ${a.status===s?'on':''}" data-act="st" data-id="${a.id}" data-s="${s}">${s}</button>`).join(''):a.status==='Pending'||a.status==='Reviewed'?`<button class="ghost" data-act="wd" data-id="${a.id}">Withdraw</button>`:''}<button class="ghost" data-act="open" data-j="${a.jobId}" data-ap="${E(a.applicant)}">Message</button></div></div>`}
 
 const R={};
+R.admin=()=>{
+ if(!adminData)return;
+ const uRows=adminData.allUsers.map(u=>`<div class="row"><div><b>${E(u.name)} (@${E(u.email)})</b><small>${E(u.role.toUpperCase())} · ${E(u.gmail||'')} · ${u.is_verified==1?'Verified':'Unverified'}</small></div></div>`).join('');
+ const lockRows=adminData.locks.map(l=>`<div class="row"><div><b>User Lock: ${E(l.username)}</b><small>Total fails: ${l.t} · Stage: ${l.s}</small></div><button class="ghost" data-act="unlockUser" data-target="${E(l.username)}">Clear Lock</button></div>`).join('')||'<p class="mut">No locked accounts.</p>';
+ const ipRows=adminData.ipBlocks.map(b=>`<div class="row"><div><b>Blocked IP: ${E(b.ip)}</b></div><button class="ghost" data-act="unblockIp" data-target="${E(b.ip)}">Unblock IP</button></div>`).join('')||'<p class="mut">No blocked IPs.</p>';
+ const logRows=adminData.logs.map(g=>`<div class="row"><div><b>${E(g.action)}</b><small>${E(g.username)} · ${E(g.details)} (${E(g.ip)})</small></div><small>${new Date(+g.ts).toLocaleString()}</small></div>`).join('');
+ $('#v-admin').innerHTML=`
+   <div class="timecard">
+     <div><b>${adminData.allUsers.length}</b><span>Total Users</span></div>
+     <div><b>${adminData.locks.length}</b><span>Security Flags</span></div>
+     <div><b>${adminData.ipBlocks.length}</b><span>Blocked IPs</span></div>
+     <div><b>${adminData.logs.length}</b><span>Activity Logs</span></div>
+   </div>
+   <div class="panel" style="margin-bottom:18px"><h4>Security Flags (Account Locks & IP Blocks)</h4>${lockRows}${ipRows}</div>
+   <div class="panel" style="margin-bottom:18px"><h4>Registered Accounts (${adminData.allUsers.length})</h4>${uRows}</div>
+   <div class="panel"><h4>Recent Activity Logs</h4>${logRows}</div>`;
+};
 R.home=()=>{const a=myApps(),o=own(),cnt=s=>a.filter(x=>x.status===s).length,h=new Date().getHours(),g=h<11?'Good Morning':h<13?'Good Afternoon':h<18?'Good Afternoon':'Good Evening';
  const open=jobs.filter(j=>j.open&&(!o||j.owner===me.email)),lc={};open.forEach(j=>lc[j.loc]=(lc[j.loc]||0)+1);const le=Object.entries(lc).sort((x,y)=>y[1]-x[1]).slice(0,5),mx=le[0]?.[1]||1;
  const st=[[o?'Active listings':'Open jobs',open.length],[o?'Applicants':'My applications',a.length],['Unread messages',unread()],[o?'Hired':'Matches',cnt('Hired')]];
@@ -59,7 +76,7 @@ R.home=()=>{const a=myApps(),o=own(),cnt=s=>a.filter(x=>x.status===s).length,h=n
  <div class="panel"><h4>Open jobs by area</h4>${le.map(([p,n])=>`<div class="loc"><span>${E(p)}</span><i style="width:${n/mx*100}%"></i><b>${n}</b></div>`).join('')||'<p class="mut">No open jobs yet.</p>'}</div></div>
  <h4 style="margin:0 0 12px;font-size:19px">${o?'Waiting for your reply':'Fresh jobs for you'}</h4>${list}`};
 R.jobs=()=>{const q=$('#q').value.toLowerCase();let l=jobs.filter(j=>(!own()||!mine||j.owner===me.email)&&(!fl||j.loc===fl)&&(j.title+j.loc+j.desc+j.cat+j.ownerName).toLowerCase().includes(q));
- if(!own())l=l.filter(j=>j.open||apps.some(a=>a.jobId===j.id&&a.applicant===me.email));
+ if(!own()&&!adm())l=l.filter(j=>j.open||apps.some(a=>a.jobId===j.id&&a.applicant===me.email));
  $('#v-jobs').innerHTML=`<div class="bar"><select id="fl" aria-label="Area"><option value="">All areas</option>${[...new Set(jobs.map(j=>j.loc))].sort().map(x=>`<option ${x===fl?'selected':''}>${E(x)}</option>`).join('')}</select>${own()?`<label class="chk"><input type="checkbox" id="mine" ${mine?'checked':''}> My listings only</label>`:''}<span class="cnt">${l.length} job${l.length==1?'':'s'}</span></div>`+(l.map(ticket).join('')||`<p class="empty">${own()?'Nothing here yet. Post a job and applicants will appear under Applicants.':'No jobs match. Try another area or search.'}</p>`)};
 R.post=()=>{};
 R.people=()=>{$('#v-people').innerHTML=myApps().sort((a,b)=>b.ts-a.ts).map(row).join('')||`<p class="empty">${own()?'No applicants yet. They’ll show up here as soon as someone applies.':'You haven’t applied yet. Open Jobs and tap Apply.'}</p>`};
@@ -78,7 +95,7 @@ function openVerifyModal(u,msg){verifyUser=u;$('#ve').textContent=msg||'';$('#vo
 
 const A={
  mode(){up=!up;document.querySelectorAll('.su').forEach(x=>x.hidden=!up);$('#at').textContent=up?'Create your account':'Welcome back';$('#swap').textContent=up?'Already have an account? Log in':'No account yet? Sign up';$('#pass').autocomplete=up?'new-password':'current-password';err('');lockUI()},
- logout(d,msg){fetch(API+'logout',{method:'POST',headers:H()}).catch(()=>{});localStorage.removeItem('qs2_tok');tok='';sig='';me=null;th=null;$('#app').hidden=true;$('#auth').hidden=false;lockUI();if(msg)toast(msg)},
+ logout(d,msg){fetch(API+'logout',{method:'POST',headers:H()}).catch(()=>{});localStorage.removeItem('qs2_tok');tok='';sig='';me=null;adminData=null;th=null;$('#app').hidden=true;$('#auth').hidden=false;lockUI();if(msg)toast(msg)},
  forgot(){FP={step:0,u:'',rt:'',qs:[]};fpDraw();$('#fp').showModal()},
  fcx(){$('#fp').close()},
  vcx(){$('#vfy').close()},
@@ -89,6 +106,8 @@ const A={
  async del(d){if(confirm('Delete this job and its applications?')&&await op('del',{id:d.id}))toast('Job deleted.')},
  async st(d){if(await op('st',{id:d.id,s:d.s}))toast('Marked as '+d.s+'.')},
  async wd(d){if(confirm('Withdraw this application?'))await op('wd',{id:d.id})},
+ async unlockUser(d){if(await op('unlock_user',{target:d.target}))toast('User lock cleared.')},
+ async unblockIp(d){if(await op('unblock_ip',{target:d.target}))toast('IP unblocked.')},
  open(d){th={j:d.j,ap:d.ap};markRead();go('msgs')}
 };
 document.addEventListener('click',e=>{const t=e.target.closest('[data-act],[data-go]');if(!t)return;t.dataset.go?go(t.dataset.go):A[t.dataset.act]?.(t.dataset)});
