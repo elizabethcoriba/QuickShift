@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QuickShift – JOBS FOR EVERYONE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=3"></head><body>
+
+<main id="auth" class="auth">
+  <section class=" auth-visual" aria-label="QuickShift job scheduling illustration">
+    <div class="visual-glow glow-one"></div><div class="visual-glow glow-two"></div>
+    <div class="brand brand-large">Quick<span>Shift</span><i>✦</i></div>
+    <p class="visual-kicker">FLEXIBLE WORK. BETTER OPPORTUNITIES.</p>
+    <h1>Find your next<br><span>great shift.</span></h1>
+    <p class="visual-copy">Connect local businesses with people ready to work. Your next opportunity is just a sign in away.</p>
+    <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+    <div class="dash-window">
+      <div class="dash-top"><span></span><span></span><span></span><b>WEEKLY SHIFT OVERVIEW</b></div>
+      <div class="dash-content">
+        <div class="dash-side"><i></i><i></i><i></i><i></i></div>
+        <div class="dash-main">
+          <div class="dash-heading"><b>Available shifts</b><small>THIS WEEK</small></div>
+          <div class="mini-stats"><div><b>24</b><small>Open shifts</small></div><div><b>08</b><small>New matches</small></div></div>
+          <div class="shift-line"><span class="shift-dot teal-dot"></span><div><b>Barista</b><small>Cogon · 2:00 PM – 6:00 PM</small></div><strong>₱90/hr</strong></div>
+          <div class="shift-line"><span class="shift-dot gold-dot"></span><div><b>Cashier</b><small>Divisoria · 8:00 AM – 12:00 PM</small></div><strong>₱500/day</strong></div>
+          <div class="shift-line"><span class="shift-dot coral-dot"></span><div><b>Delivery rider</b><small>Carmen · 5:00 PM – 9:00 PM</small></div><strong>₱650/day</strong></div>
+        </div>
+      </div>
+    </div>
+    <div class="float-chip chip-top"><span>✦</span> Find work that fits your week</div>
+    <div class="float-chip chip-bottom"><span>✓</span> Local jobs. Real opportunities.</div>
+    <div class="visual-footer">QUICKSHIFT · JOBS FOR EVERYONE</div>
+  </section>
+  <section class="auth-panel">
+    <form id="authForm" class="authcard" novalidate>
+      <div class="brand brand-card">Quick<span>Shift</span><i>✦</i></div>
+      <div class="card-accent"></div>
+      <p class="eyebrow">YOUR NEXT OPPORTUNITY STARTS HERE</p>
+      <h2 id="at">Welcome back</h2>
+      <p class="mut">Sign in to find a shift that fits your week, or post one.</p>
+      <div class="su two" hidden><label>First name<input id="fn" maxlength="50" autocomplete="given-name" placeholder="First name"></label><label>Last name<input id="ln" maxlength="50" autocomplete="family-name" placeholder="Last name"></label></div>
+      <label>Username<input id="email" minlength="6" maxlength="20" autocomplete="username" placeholder="Enter your username (6–20 characters)"></label>
+      <label class="su" hidden>Gmail address<input id="gmail" type="email" autocomplete="email" placeholder="yourname@gmail.com"></label>
+      <label>Password<span class="pw"><input id="pass" type="password" minlength="8" maxlength="100" autocomplete="current-password" placeholder="Enter your password"><button type="button" class="lnk" id="peek" data-act="peek">Show</button></span></label>
+      <label class="su" hidden>I am an…<select id="rl"><option value="owner">Owner – I’m hiring</option><option value="applicant">Part-timer – I’m looking for work</option></select></label>
+      <label class="su" hidden>Phone number<input id="phone" inputmode="tel" placeholder="09XX XXX XXXX"></label>
+      <div id="sq" class="su" hidden></div>
+      <p id="aerr" class="err" role="alert"></p>
+      <button id="authBtn" class="btn wide">Log in</button>
+      <p class="swap"><button type="button" class="lnk" id="fgt" data-act="forgot" hidden>Forgot Password?</button></p>
+      <p class="swap"><button type="button" class="lnk" id="swap" data-act="mode">No account yet? Sign up</button></p>
+      <p class="secure-note"><span>▣</span> Secure sign in · Your account is protected</p>
+    </form>
+  </section>
+</main>
+
+<div id="app" class="app" hidden>
+  <nav class="rail">
+    <div class="logo">Quick<b>Shift</b></div>
+    <div id="nav" class="navs"></div>
+    <div class="who"><div id="me"></div><button class="lnk" data-act="logout">Log out</button></div>
+  </nav>
+  <main class="stage">
+    <header><h2 id="vt"></h2><input id="q" type="search" placeholder="Search jobs, areas, owners…" aria-label="Search jobs" hidden></header>
+    <section id="v-home" class="view"></section>
+    <section id="v-jobs" class="view" hidden></section>
+    <section id="v-post" class="view" hidden>
+      <form id="pf" class="panel pform">
+        <label class="w2">Job title<input id="jt" required placeholder="Cashier, barista, rider…"></label>
+        <label>Category<select id="jc"></select></label>
+        <label>Area<input id="jl" list="locs" required placeholder="Divisoria"></label><datalist id="locs"></datalist>
+        <label>Pay (₱)<input id="jp" type="number" min="1" required placeholder="500"></label>
+        <label>Per<select id="ju"><option>day</option><option>hour</option><option>week</option></select></label>
+        <fieldset class="w2"><legend>Working days</legend><div id="days" class="days"></div></fieldset>
+        <label>Start<input id="t1" type="time" value="08:00" required></label>
+        <label>End<input id="t2" type="time" value="12:00" required></label>
+        <label>People needed<input id="js" type="number" min="1" value="1" required></label>
+        <label class="w2">What will they do?<textarea id="jd" rows="3" placeholder="Unsa ang buhaton? Be clear so applicants know what to expect."></textarea></label>
+        <button class="btn w2">Publish job</button>
+      </form>
+    </section>
+    <section id="v-people" class="view" hidden></section>
+    <section id="v-msgs" class="view" hidden><div class="chat"><aside id="tl"></aside><section id="tv"></section></div></section>
+  </main>
+</div>
+
+<dialog id="dlg"><form id="df"><h3>Apply for this job</h3><label>Short note to the owner (optional)<textarea id="dn" rows="3" placeholder="Hi! I’m free on those days and can start Monday."></textarea></label><div class="dact"><button type="button" class="ghost" data-act="cx">Cancel</button><button class="btn">Send application</button></div></form></dialog>
+<dialog id="fp"><form id="ff"><h3>Reset your password</h3><div id="fb"></div><p id="fe" class="err" role="alert"></p><div class="dact"><button type="button" class="ghost" data-act="fcx">Cancel</button><button class="btn" id="fgo">Send OTP</button></div></form></dialog>
+<dialog id="vfy"><form id="vf"><h3>Verify your Gmail</h3><p class="mut" style="margin-bottom:12px">Enter the 6-digit OTP sent to your Gmail. Valid for 5 minutes.</p><label>6-digit OTP<input id="vo" inputmode="numeric" maxlength="6" required placeholder="123456"></label><p id="ve" class="err" role="alert"></p><div class="dact"><button type="button" class="ghost" data-act="vcx">Cancel</button><button class="btn">Verify OTP</button></div></form></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="script.js?v=5"></script>
+</body></html>
